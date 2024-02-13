@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIN EVALUACION FINANCIERA</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        function calcularVPN() {
+            var numAnios = parseInt(document.getElementById('numAnios').value);
+            var flujos = [];
+            var tasaDescuento = parseFloat(document.getElementById('tasaDescuento').value);
+
+            for (var i = 1; i <= numAnios; i++) {
+                var flujo = parseFloat(document.getElementById('flujoAnio' + i).value);
+                flujos.push(flujo);
+            }
+
+            var vpn = 0;
+            for (var i = 0; i < numAnios; i++) {
+                vpn += flujos[i] / Math.pow(1 + tasaDescuento / 100, i + 1);
+            }
+
+            var inversionInicial = parseFloat(document.getElementById('inversionInicial').value);
+            vpn -= inversionInicial;
+
+            document.getElementById('resultadoVPN').innerHTML = 'Valor Presente Neto (VPN): $' + vpn.toFixed(2);
+        }
+
+        function calcularTIR() {
+            var numAnios = parseInt(document.getElementById('numAnios').value);
+            var flujos = [];
+            var inversionInicial = parseFloat(document.getElementById('inversionInicial').value);
+
+            for (var i = 1; i <= numAnios; i++) {
+                var flujo = parseFloat(document.getElementById('flujoAnio' + i).value);
+                flujos.push(flujo);
+            }
+
+            var minTIR = 0;
+            var maxTIR = 100;
+            var tolerance = 0.001;
+            var tir = 0;
+
+            while (maxTIR - minTIR > tolerance) {
+                tir = (maxTIR + minTIR) / 2;
+                var vpn = 0;
+
+                for (var i = 0; i < numAnios; i++) {
+                    vpn += flujos[i] / Math.pow(1 + tir / 100, i + 1);
+                }
+
+                vpn -= inversionInicial;
+
+                if (vpn > 0) {
+                    minTIR = tir;
+                } else {
+                    maxTIR = tir;
+                }
+            }
+
+            document.getElementById('resultadoTIR').innerHTML = 'Tasa Interna de Retorno (TIR): ' + tir.toFixed(2) + '%';
+        }
+
+        function calcularPRI() {
+            var numAnios = parseInt(document.getElementById('numAnios').value);
+            var flujos = [];
+            var inversionInicial = parseFloat(document.getElementById('inversionInicial').value);
+            var acumulado = 0;
+            var priAnios = 0;
+            var priMeses = 0;
+
+            for (var i = 1; i <= numAnios; i++) {
+                var flujo = parseFloat(document.getElementById('flujoAnio' + i).value);
+                flujos.push(flujo);
+            }
+
+            for (var i = 0; i < numAnios; i++) {
+                acumulado += flujos[i];
+                if (acumulado >= inversionInicial) {
+                    priAnios = i + 1; // Suma 1 porque los años comienzan desde 1
+                    priMeses = Math.ceil((inversionInicial - (acumulado - flujos[i])) / flujos[i] * 12);
+                    break;
+                }
+            }
+
+            var resultadoPRI = 'Periodo de Recuperación de la Inversión (PRI): ';
+
+            if (priAnios > 0) {
+                resultadoPRI += priAnios + ' año';
+                if (priAnios > 1) resultadoPRI += 's';
+            }
+
+            if (priMeses > 0) {
+                if (priAnios > 0) resultadoPRI += ' ';
+                resultadoPRI += priMeses + ' mes';
+                if (priMeses > 1) resultadoPRI += 'es';
+            }
+
+            document.getElementById('resultadoPRI').innerHTML = resultadoPRI;
+
+            // Mostrar el año en que se supera la inversión
+            if (priAnios > 0) {
+                var acumuladoElement = document.getElementById('acumuladoSuperado');
+                acumuladoElement.innerHTML = 'Acumulado supera inversión en el año: ' + priAnios;
+            } else {
+                var acumuladoElement = document.getElementById('acumuladoSuperado');
+                acumuladoElement.innerHTML = 'La inversión no se recupera en el período especificado.';
+            }
+        }
+
+        function calcularPuntoEquilibrio() {
+            var costosFijos = parseFloat(document.getElementById('costosFijos').value);
+            var precioVentaPorUnidad = parseFloat(document.getElementById('precioVentaPorUnidad').value);
+            var costosVariablesPorUnidad = parseFloat(document.getElementById('costosVariablesPorUnidad').value);
+
+            var margenContribucionPorUnidad = precioVentaPorUnidad - costosVariablesPorUnidad;
+
+            if (margenContribucionPorUnidad <= 0) {
+                document.getElementById('resultadoPuntoEquilibrio').innerHTML = 'No es posible calcular el punto de equilibrio. El margen de contribución por unidad debe ser mayor que cero.';
+                return;
+            }
+
+            var puntoEquilibrioUnidades = costosFijos / margenContribucionPorUnidad;
+            var puntoEquilibrioIngresos = puntoEquilibrioUnidades * precioVentaPorUnidad;
+
+            document.getElementById('resultadoPuntoEquilibrio').innerHTML = 'Punto de Equilibrio (en unidades): ' + puntoEquilibrioUnidades.toFixed(2) + '<br>Punto de Equilibrio (en ingresos): $' + puntoEquilibrioIngresos.toFixed(2);
+        }
+
+        function generarCasillasFlujos() {
+            var numAnios = parseInt(document.getElementById('numAnios').value);
+            var flujosAnioDiv = document.getElementById('flujosAnio');
+
+            flujosAnioDiv.innerHTML = '';
+
+            var table = document.createElement('table');
+
+            var trLabels = document.createElement('tr');
+            var trInputs = document.createElement('tr');
+
+            for (var i = 1; i <= numAnios; i++) {
+                var label = document.createElement('td');
+                label.innerHTML = 'Año ' + i;
+
+                var input = document.createElement('td');
+                input.innerHTML = '<input type="number" id="flujoAnio' + i + '" required>';
+
+                trLabels.appendChild(label);
+                trInputs.appendChild(input);
+
+                // Agrupar las casillas de a cuatro
+                if (i % 4 === 0 || i === numAnios) {
+                    table.appendChild(trLabels);
+                    table.appendChild(trInputs);
+                    trLabels = document.createElement('tr');
+                    trInputs = document.createElement('tr');
+                }
+            }
+
+            flujosAnioDiv.appendChild(table);
+        }
+    </script>
+</head>
+
+<body>
+    <h1>PIN EVALUACION FINANCIERA</h1>
+
+    <label for="numAnios">Número de años:</label>
+    <input type="number" id="numAnios" min="1" onchange="generarCasillasFlujos()" required>
+
+    <br><br>
+
+    <label for="tasaDescuento">WAC (%):</label>
+    <input type="number" id="tasaDescuento" min="0" required>
+
+    <br><br>
+
+    <label for="inversionInicial">Inversión Inicial:</label>
+    <input type="number" id="inversionInicial" required>
+
+    <br><br>
+
+    <h2>Flujos de efectivo por año:</h2>
+
+    <div id="flujosAnio">
+        <!-- Aquí se generan dinámicamente las casillas para los flujos por año -->
+    </div>
+
+    <br>
+
+    <button onclick="calcularVPN()">Calcular VPN</button>
+    <button onclick="calcularTIR()">Calcular TIR</button>
+    <button onclick="calcularPRI()">Calcular PRI</button>
+
+    <br><br>
+
+    <div id="resultadoVPN"></div>
+    <div id="resultadoTIR"></div>
+    <div id="resultadoPRI"></div>
+    <div id="acumuladoSuperado"></div>
+
+    <h2>Información para Punto de Equilibrio:</h2>
+
+    <label for="costosFijos">Costos Fijos Totales:</label>
+    <input type="number" id="costosFijos" required>
+
+    <br><br>
+
+    <label for="precioVentaPorUnidad">Precio de Venta por Unidad:</label>
+    <input type="number" id="precioVentaPorUnidad" required>
+
+    <br><br>
+
+    <label for="costosVariablesPorUnidad">Costos Variables por Unidad:</label>
+    <input type="number" id="costosVariablesPorUnidad" required>
+
+    <br><br>
+
+    <button onclick="calcularPuntoEquilibrio()">Calcular Punto de Equilibrio</button>
+
+    <br><br>
+
+    <div id="resultadoPuntoEquilibrio"></div>
+
+    <script>
+        generarCasillasFlujos();
+    </script>
+</body>
+
+</html>
